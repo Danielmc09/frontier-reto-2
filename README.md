@@ -6,8 +6,8 @@ repositorio lo replica: mismo status y mismo cuerpo para cada request, errores i
 
 El servicio cambió durante el día (incidente FR-0153). El reemplazo reproduce la
 **versión 2**, la vigente. La especificación completa, con la evidencia de cada
-comportamiento, está en [`docs/especificacion.md`](docs/especificacion.md), y el
-enunciado del reto en [`docs/ENUNCIADO.md`](docs/ENUNCIADO.md).
+comportamiento, está en [`documentos/especificacion.md`](documentos/especificacion.md), y el
+enunciado del reto en [`documentos/ENUNCIADO.md`](documentos/ENUNCIADO.md).
 
 ## Qué hace el servicio
 
@@ -94,8 +94,10 @@ El token es `Authorization: Bearer <token>`, comparado contra la variable de ent
 ├── requirements.txt    Dependencias del servicio (uvicorn)
 ├── requirements-dev.txt  Dependencias de las herramientas forenses y tests (httpx)
 │
-├── docs/
+├── documentos/
 │   ├── especificacion.md   Comportamientos con evidencia y confianza (entregable)
+│   ├── documento_de_diseno.pdf  Documento de diseño (entregable de Systems Design)
+│   ├── arquitectura.png    Diagrama de arquitectura (entregable de Systems Design)
 │   └── ENUNCIADO.md        Enunciado del reto
 ├── datos/
 │   ├── experimentos.jsonl  Log de cada request al original (entregable; id = número de línea)
@@ -122,7 +124,6 @@ El token es `Authorization: Bearer <token>`, comparado contra la variable de ent
 │   ├── test_control.py     Checksum, orden de errores y ejemplos
 │   ├── test_app.py         Orden ruta/token y /health
 │   └── test_smoke.py       Contrato del entrypoint
-└── documentos/         Documento de diseño y diagrama de arquitectura
 ```
 
 El servicio queda en la raíz y la imagen copia solo esos tres archivos: las herramientas

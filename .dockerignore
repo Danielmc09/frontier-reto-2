@@ -10,7 +10,6 @@ __pycache__/
 forense/
 tests/
 datos/
-docs/
 documentos/
 pruebas/
 requirements-dev.txt

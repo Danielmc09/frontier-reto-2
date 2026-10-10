@@ -16,6 +16,7 @@ import httpx
 from compare import resp_equal
 from app import app  # replica in-process
 from model import _checksum
+from tabla import encabezado, fila, regla, resumen
 
 ORIG = os.environ.get("ORIG_URL", "https://caja-negra-production-c64f.up.railway.app").rstrip("/")
 TOKEN = os.environ.get("TOKEN", "")
@@ -42,34 +43,60 @@ SEQS = [
 ]
 
 
+COLS = (("SEQ", 4), ("#", 2), ("MENSAJE", 32), ("RESPUESTA", 56), ("RESULTADO", 9))
+
+
+def _resumen(r):
+    try:
+        return resumen(r.status_code, r.json())
+    except Exception:
+        return resumen(r.status_code, r.text)
+
+
 async def run(seqs):
     orig = httpx.Client(
         base_url=ORIG,
         headers={"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}, timeout=10.0)
     transport = httpx.ASGITransport(app=app)
+    print(f"Original : {ORIG}\nReemplazo: app.py in-process\n"
+          f"Cada secuencia arranca con /__reset en los dos. Se compara status + cuerpo.\n"
+          f"RESPUESTA es la del original; si el reemplazo difiere, va abajo.\n")
+    print(encabezado(COLS))
     total = div = 0
+    difs = []
     async with httpx.AsyncClient(
             transport=transport, base_url="http://repl",
             headers={"Authorization": f"Bearer {RESET_TOKEN}"}) as repl:
         for i, seq in enumerate(seqs):
+            if i:
+                print(regla(COLS))
             time.sleep(GAP)
             orig.post("/__reset")
             await repl.post("/__reset")
-            for m in seq:
+            for j, m in enumerate(seq, 1):
                 time.sleep(GAP)
                 ro = orig.post("/msg", json={"m": m})
                 if ro.headers.get("X-Frontier-Infra") == "rate-limit":
                     # no llego al servicio: tampoco se manda al repl, los estados siguen iguales
-                    print(f"SKIP seq{i} m={m!r} (rate-limit de infra)")
+                    print(fila(COLS, f"s{i}", j, m, "429 rate-limit de infra (no llega al servicio)", "SKIP"))
                     continue
                 total += 1
                 rr = await repl.post("/msg", json={"m": m})
-                if not resp_equal(ro.status_code, ro.content, rr.status_code, rr.content):
+                igual = resp_equal(ro.status_code, ro.content, rr.status_code, rr.content)
+                if igual:
+                    print(fila(COLS, f"s{i}", j, m, _resumen(ro), "OK"))
+                else:
                     div += 1
-                    print(f"DIVERGE seq{i} m={m!r}")
-                    print(f"   orig {ro.status_code} {ro.text}")
-                    print(f"   repl {rr.status_code} {rr.text}")
-    print(f"{total - div}/{total} pasos iguales")
+                    difs.append((f"s{i}", j, m, ro, rr))
+                    print(fila(COLS, f"s{i}", j, m, "original : " + _resumen(ro), "DIFERENTE"))
+                    print(fila(COLS, "", "", "", "reemplazo: " + _resumen(rr), ""))
+    print(regla(COLS))
+    print(f"\n{total - div}/{total} pasos iguales")
+    # la tabla corta los textos largos: las diferencias van completas abajo
+    for sq, j, m, ro, rr in difs:
+        print(f"\nDIFERENTE {sq} #{j} {m!r}")
+        print(f"  original : {ro.status_code} {ro.text}")
+        print(f"  reemplazo: {rr.status_code} {rr.text}")
     orig.close()
 
 

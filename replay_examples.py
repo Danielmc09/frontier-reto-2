@@ -12,27 +12,38 @@ import json
 import os
 import model
 from compare import resp_equal
+from tabla import encabezado, fila, regla, resumen
 
 EX = os.environ.get("EX", "pruebas/ejemplos.jsonl")
+COLS = (("N", 3), ("MENSAJE", 34), ("RESPUESTA ESPERADA (original)", 56), ("RESULTADO", 9))
 
 lines = [json.loads(l) for l in open(EX, encoding="utf-8") if l.strip()]
 
-# --- replay de la secuencia ---
+# --- replay de la secuencia: una fila por ejemplo, con lo que compara ---
 st = model.initial_state()
 ok = 0
 misses = []
+print(f"Replay de {EX} contra model.respond, en orden y desde el estado inicial.")
+print("Compara status + cuerpo del modelo contra lo que respondio el original.\n")
+print(encabezado(COLS))
 for rec in lines:
+    m = rec["request"]["m"]
     body = json.dumps(rec["request"]).encode("utf-8")
     (status, _h, rbody), st = model.respond("POST", "/msg", "", {}, body, st)
-    exp_body = json.dumps(rec["response"]).encode("utf-8")
-    if resp_equal(rec["status"], exp_body, status, rbody):
+    esperado = resumen(rec["status"], rec["response"])
+    igual = resp_equal(rec["status"], json.dumps(rec["response"]).encode("utf-8"), status, rbody)
+    if igual:
         ok += 1
+        print(fila(COLS, rec["n"], m, esperado, "OK"))
     else:
-        misses.append((rec["n"], rec["request"]["m"], rec["status"],
-                       rec["response"], status, json.loads(rbody.decode("utf-8"))))
+        obtenido = resumen(status, json.loads(rbody))
+        misses.append((rec["n"], m, esperado, obtenido))
+        print(fila(COLS, rec["n"], m, "original: " + esperado, "MISS"))
+        print(fila(COLS, "", "", "modelo  : " + obtenido, ""))
+print(regla(COLS))
 
-print(f"{ok}/{len(lines)} ejemplos reproducidos")
-for n, m, es, eb, gs, gb in misses:
-    print(f"  MISS n={n} m={m!r}")
-    print(f"       esperado: {es} {eb}")
-    print(f"       obtuve  : {gs} {gb}")
+# la tabla corta los textos largos: los MISS van completos abajo
+for n, m, esperado, obtenido in misses:
+    print(f"\nMISS n={n} {m!r}\n  original: {esperado}\n  modelo  : {obtenido}")
+
+print(f"\n{ok}/{len(lines)} ejemplos reproducidos")

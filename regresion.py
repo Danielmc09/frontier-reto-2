@@ -1,7 +1,7 @@
 """
 regresion.py - Detector rapido del cambio de las 15:30 (~26 requests).
 Corre un battery fijo contra el ORIGINAL y lo compara con el baseline conocido.
-Reusa fuzz.py. Corres VOS con tu token de la caja negra:
+Reusa fuzz.py y loguea en regresion.jsonl (experimentos.jsonl ya se entrego).
 
   TOKEN=<tu token> python regresion.py
   # o Docker:
@@ -13,13 +13,33 @@ Antes de las 15:30 debe decir SIN CAMBIOS. Despues, lista EXACTAMENTE que cambio
 """
 import json
 import os
-from fuzz import reset, send, _client
+
+# experimentos.jsonl ya se entrego: la regresion loguea aparte (fuzz.py lee LOG_PATH al importarse)
+os.environ.setdefault("LOG_PATH", "regresion.jsonl")
+from fuzz import reset, send, _client  # noqa: E402
 from compare import bodies_equal
+from tabla import encabezado, fila, regla, resumen
 
 EX = os.environ.get("EX", "pruebas/ejemplos.jsonl")
 
+COLS = (("BLOQUE", 9), ("CHEQUEO", 34), ("RESPUESTA ESPERADA (baseline)", 56), ("RESULTADO", 9))
+
+
 if __name__ == "__main__":
     difs = []
+
+    def mostrar(same, bloque, que, esperado, ahora):
+        if same:
+            print(fila(COLS, bloque, que, esperado, "OK"))
+        else:
+            difs.append((bloque, que, esperado, ahora))
+            print(fila(COLS, bloque, que, "baseline: " + esperado, "CAMBIO"))
+            print(fila(COLS, "", "", "ahora   : " + ahora, ""))
+
+    print(f"Regresion contra el original: {_client.base_url}")
+    print(f"Log de esta corrida: {os.environ['LOG_PATH']}")
+    print("Compara lo que responde el original hoy contra lo que respondia antes.\n")
+    print(encabezado(COLS))
 
     # 1) los 20 ejemplos (semantica + estado + errores + checksum)
     reset()
@@ -27,9 +47,9 @@ if __name__ == "__main__":
         st, resp, _ = send(rec["request"]["m"], seq="regresion", hipotesis="regresion ejemplos")
         same = (st == rec["status"]) and bodies_equal(
             json.dumps(resp).encode(), json.dumps(rec["response"]).encode())
-        if not same:
-            difs.append(f"ejemplo n={rec['n']} m={rec['request']['m']!r}: "
-                        f"ahora {st} {resp} | baseline {rec['status']} {rec['response']}")
+        mostrar(same, f"ejemplo{rec['n']}", rec["request"]["m"],
+                resumen(rec["status"], rec["response"]), resumen(st, resp))
+    print(regla(COLS))
 
     # 2) auth y rutas (esperado confirmado por fuzzing)
     checks = [
@@ -44,23 +64,29 @@ if __name__ == "__main__":
             rb = r.json()
         except Exception:
             rb = r.text
-        if r.status_code != exp_st or rb != exp_body:
-            difs.append(f"{method} {path}: ahora {r.status_code} {rb} | baseline {exp_st} {exp_body}")
+        same = r.status_code == exp_st and rb == exp_body
+        mostrar(same, "auth/ruta", f"{method} {path}" + (" sin token" if hdr else ""),
+                resumen(exp_st, exp_body), resumen(r.status_code, rb))
+    print(regla(COLS))
 
     # 3) checksum: control valido (14) vs invalido (15) para CONSULTA;AC-0001
     reset()
-    _, r_ok, _ = send("CONSULTA;AC-0001;14", seq="regresion", hipotesis="checksum valido")
-    _, r_bad, _ = send("CONSULTA;AC-0001;15", seq="regresion", hipotesis="checksum invalido")
+    st_ok, r_ok, _ = send("CONSULTA;AC-0001;14", seq="regresion", hipotesis="checksum valido")
+    st_bad, r_bad, _ = send("CONSULTA;AC-0001;15", seq="regresion", hipotesis="checksum invalido")
     ok_err = r_ok.get("error") if isinstance(r_ok, dict) else None
     bad_err = r_bad.get("error") if isinstance(r_bad, dict) else None
-    if ok_err in ("E201", "E202") or bad_err != "E202":
-        difs.append(f"checksum CONSULTA;AC-0001: control 14 -> {r_ok} ; control 15 -> {r_bad} "
-                    f"(se esperaba 14 valido, 15 -> E202)")
+    mostrar(ok_err not in ("E201", "E202"), "checksum", "CONSULTA;AC-0001;14 (valido)",
+            "pasa la integridad (ni E201 ni E202)", resumen(st_ok, r_ok))
+    mostrar(bad_err == "E202", "checksum", "CONSULTA;AC-0001;15 (invalido)",
+            "400 E202 control inválido", resumen(st_bad, r_bad))
+    print(regla(COLS))
 
-    print()
     if difs:
-        print("=== CAMBIO DETECTADO (parchear model.py y redeployar) ===")
-        for d in difs:
-            print("  -", d)
+        print(f"\n=== CAMBIO DETECTADO en {len(difs)} chequeo(s): parchear model.py y redeployar ===")
+        # la tabla corta los textos largos: los cambios van completos abajo
+        for bloque, que, esperado, ahora in difs:
+            print(f"\nCAMBIO {bloque} {que!r}")
+            print(f"  baseline: {esperado}")
+            print(f"  ahora   : {ahora}")
     else:
-        print("=== SIN CAMBIOS (todo igual al baseline) ===")
+        print("\n=== SIN CAMBIOS (todo igual al baseline) ===")

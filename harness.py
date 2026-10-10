@@ -35,7 +35,8 @@ class Pacer:
 
 PACER = Pacer(RPS)
 _log = open(LOG_PATH, "a", buffering=1, encoding="utf-8")
-_counter = itertools.count(1)
+# id = numero de linea del log (unico): seguir desde la ultima, no desde 1
+_counter = itertools.count(sum(1 for _ in open(LOG_PATH, encoding="utf-8")) + 1)
 _client = httpx.Client(
     base_url=BASE_URL,
     headers={"Authorization": f"Bearer {TOKEN}"} if TOKEN else {},

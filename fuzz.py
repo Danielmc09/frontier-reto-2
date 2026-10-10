@@ -49,7 +49,8 @@ def _pace():
 _client = httpx.Client(base_url=BASE_URL,
                        headers={"Authorization": f"Bearer {TOKEN}"}, timeout=10.0)
 _logf = open(LOG, "a", buffering=1, encoding="utf-8")
-_id = itertools.count(1)
+# id = numero de linea del log (unico): seguir desde la ultima, no desde 1
+_id = itertools.count(sum(1 for _ in open(LOG, encoding="utf-8")) + 1)
 _count = [0]
 
 

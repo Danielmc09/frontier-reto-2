@@ -82,9 +82,11 @@ def _msg(body, st):
 
     # --- integridad PRIMERO: control = ultimo campo, checksum sobre todo lo anterior.
     # Confirmado: 'ZZZ;1' -> E202 (no E301) y 'ALTA;a;b;c;0' -> E202 (no E302).
-    # Sin ';' no hay control: E201 (supuesto).
+    # Confirmado: sin ';' no hay campo de control -> E103 ('ZZZ').
     if not (cmd_up == "PING" and not PING_VALIDA_CONTROL):
-        if not args or not _es_entero(args[-1]):
+        if not args:
+            return _err("E103", "falta control", 400)
+        if not _es_entero(args[-1]):
             return _err("E201", "control mal formado", 400)
         payload = ";".join([cmd_up] + args[:-1])
         if not control_valido(payload, int(args[-1])):

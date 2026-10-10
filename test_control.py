@@ -31,7 +31,8 @@ assert error("ZZZ;1") == "E202"
 assert error("ALTA;a;b;c;0") == "E202"
 assert error("ZZZ;54") == "E301"
 assert error("ALTA;a;b;c;18") == "E302"
+assert error("ZZZ") == "E103"  # sin ';' no hay campo de control
 
 out = subprocess.run([sys.executable, "replay_examples.py"], capture_output=True, text=True).stdout
-assert out.startswith("20/20"), out
+assert out.rstrip().endswith("20/20 ejemplos reproducidos"), out
 print(f"ok: {len(pares)} pares + 20/20 ejemplos")

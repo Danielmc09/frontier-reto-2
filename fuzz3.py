@@ -1,5 +1,5 @@
 """
-fuzz3.py - Tanda FINAL para cerrar el checksum. Reusa fuzz.py. Corres VOS con tu token:
+fuzz3.py - Tanda FINAL para cerrar el checksum. Reusa fuzz.py.
 
   TOKEN=<tu token de la caja negra> python fuzz3.py
   # o Docker:

@@ -1,6 +1,6 @@
 """
 fuzz2.py - Segunda tanda quirurgica para crackear el checksum del `control`.
-Reusa la infra de fuzz.py (pacer, log a experimentos.jsonl). Corres VOS con tu token:
+Reusa la infra de fuzz.py (pacer, log a experimentos.jsonl).
 
   TOKEN=<tu token de la caja negra> python fuzz2.py
   # o en Docker:

@@ -1,5 +1,5 @@
 """
-fuzz.py - Fase forense contra el ORIGINAL (Reto 2). Lo corres VOS con tu token.
+fuzz.py - Fase forense contra el ORIGINAL (Reto 2).
 
 Escribe:
   - experimentos.jsonl : el log entregable (append, con timestamp)

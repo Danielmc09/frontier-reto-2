@@ -6,14 +6,12 @@ El servicio es un interprete de comandos bancario sobre POST /msg con cuerpo
 mueve bytes. El evaluador compara STATUS + CUERPO (JSON por claves); los headers
 NO se comparan.
 
-Estado: conocido y verificado contra pruebas/ejemplos.jsonl (20/20 con el oraculo
-de control provisional). Lo PENDIENTE y marcado TODO(forense):
-  - El checksum del `control` (seccion "Integridad"): se reversa por fuzzing.
+Estado: verificado contra pruebas/ejemplos.jsonl (20/20, test_control.py).
+Lo PENDIENTE y marcado TODO(forense):
   - Rutas != /msg, body no-JSON, monto no numerico, orden fino de errores,
     ANULA sobre op inexistente, umbral exacto de TRANSFER.
 """
 import json
-import re
 
 _H = [(b"content-type", b"application/json; charset=utf-8")]
 
@@ -22,29 +20,17 @@ ARITY = {"PING": 1, "ALTA": 2, "CONSULTA": 2, "DEPOSITO": 3, "TRANSFER": 4, "ANU
 PING_VALIDA_CONTROL = False  # "responde pong aunque el ultimo campo no sea numero"
 LIMITE_TRANSFER = 100000     # probable: 100000 ok, 120000 E506. Acotar por fuzzing.
 
-# --- Checksum del control (reversado por fuzzing; ver spec / experimentos.jsonl) ---
-# Horner sobre el argumento: r = (10*r - 3*v(ch)) % 97, con base por comando,
-# llevado al rango [2,98] (bug de modulo incompleto que explica el 98).
-# Confianza: CONFIRMADO para digitos, letras A-I y cuentas AC-####. Para el resto
-# (nombres en minuscula, OP-, letras repetidas) la validacion es incierta, asi que
-# se ACEPTA: no arriesgamos un E202 falso que haria fallar un control valido.
-_CTRL_INIT = {"CONSULTA": 11, "ALTA": 85, "ANULA": 45, "DEPOSITO": 29, "TRANSFER": 58}
-_CTRL_SEGURO = re.compile(r"^[0-9A-I;-]*$")
-
-
-def _cval(ch: str) -> int:
-    o = ord(ch.upper())
-    if ch.isdigit():
-        return int(ch) + 3
-    if 65 <= o <= 73:        # A-I -> 4..12
-        return o - 61
-    if 74 <= o <= 90:        # J-Z -> 34..50
-        return o - 40
-    if ch == ";":
-        return 48
-    if ch == "-":
-        return 73
-    return 0
+# --- Checksum del control: ISO 7064 MOD 97-10 (el del IBAN) sobre el payload ---
+# El payload completo 'CMD;args' se pasa a digitos: los digitos quedan, cada letra
+# (sin distinguir mayusculas) se vuelve su posicion en el alfabeto en decimal
+# (A=1 ... Z=26, asi que J-Z ocupan dos digitos) y el resto se descarta.
+# control = 98 - (N*100 mod 97), siempre en [2, 98].
+# CONFIRMADO: 85/85 pares de experimentos.jsonl y ejemplos. Que se descarte todo
+# caracter no alfanumerico esta probado para ';' y '-'; para el resto es supuesto.
+def _checksum(payload: str) -> int:
+    digitos = "".join(ch if ch.isdigit() else str(ord(ch) - 64)
+                      for ch in payload.upper() if ch.isascii() and ch.isalnum())
+    return 98 - int(digitos + "00") % 97
 
 
 def initial_state() -> dict:
@@ -71,17 +57,8 @@ def _es_entero(s: str) -> bool:
 
 
 def control_valido(payload: str, control_int: int) -> bool:
-    """payload = 'CMD;arg1;...' (sin el control), CMD en mayusculas.
-    Valida el checksum SOLO en la zona confirmada; fuera de ella acepta."""
-    cmd, _, arg = payload.partition(";")
-    init = _CTRL_INIT.get(cmd)
-    if init is None or not _CTRL_SEGURO.match(arg):
-        return True
-    r = init
-    for ch in arg:
-        r = (10 * r - 3 * _cval(ch)) % 97
-    checksum = r if r >= 2 else r + 97
-    return control_int == checksum
+    """payload = 'CMD;arg1;...' (sin el control), CMD en mayusculas."""
+    return control_int == _checksum(payload)
 
 
 def respond(method, path, query, headers, body, state):
@@ -103,19 +80,20 @@ def _msg(body, st):
     cmd_up = partes[0].upper()          # comandos case-insensitive
     args = partes[1:]
 
+    # --- integridad PRIMERO: control = ultimo campo, checksum sobre todo lo anterior.
+    # Confirmado: 'ZZZ;1' -> E202 (no E301) y 'ALTA;a;b;c;0' -> E202 (no E302).
+    # Sin ';' no hay control: E201 (supuesto).
+    if not (cmd_up == "PING" and not PING_VALIDA_CONTROL):
+        if not args or not _es_entero(args[-1]):
+            return _err("E201", "control mal formado", 400)
+        payload = ";".join([cmd_up] + args[:-1])
+        if not control_valido(payload, int(args[-1])):
+            return _err("E202", "control inválido", 400)
+
     if cmd_up not in ARITY:
         return _err("E301", "comando desconocido ", 400)   # OJO: espacio final
     if len(args) != ARITY[cmd_up]:
         return _err("E302", "aridad inválida", 400)
-
-    # --- control (ultimo campo) ---
-    if not (cmd_up == "PING" and not PING_VALIDA_CONTROL):
-        control_raw = args[-1]
-        if not _es_entero(control_raw):
-            return _err("E201", "control mal formado", 400)
-        payload = ";".join([cmd_up] + args[:-1])
-        if not control_valido(payload, int(control_raw)):
-            return _err("E202", "control inválido", 400)
 
     return _dispatch(cmd_up, args, st)
 

@@ -3,10 +3,8 @@ replay_examples.py - Verifica el interprete (model.respond) contra
 pruebas/ejemplos.jsonl: reset -> manda cada request en orden -> compara
 status + cuerpo con la regla del evaluador.
 
-El control (checksum) aun no esta reversado, asi que poblamos un oraculo
-PROVISIONAL con los controles validos de los propios ejemplos. Esto solo
-valida que el INTERPRETE es correcto; el oraculo se reemplaza por el
-checksum real (control_valido) antes de servir al set oculto.
+El control se valida con el checksum real (model.control_valido), asi que
+esto prueba interprete y checksum juntos.
 
 Uso:  EX=pruebas/ejemplos.jsonl python replay_examples.py
 """
@@ -18,25 +16,6 @@ from compare import resp_equal
 EX = os.environ.get("EX", "pruebas/ejemplos.jsonl")
 
 lines = [json.loads(l) for l in open(EX, encoding="utf-8") if l.strip()]
-
-# --- construir oraculo de control desde los ejemplos (payload -> control valido) ---
-oraculo = {}
-for rec in lines:
-    m = rec["request"]["m"]
-    partes = m.split(";")
-    cmd_up = partes[0].upper()
-    args = partes[1:]
-    if cmd_up == "PING" or len(args) != model.ARITY.get(cmd_up, -1):
-        continue
-    ctrl = args[-1]
-    if not ctrl.lstrip("-").isdigit():
-        continue
-    err = rec["response"].get("error") if isinstance(rec["response"], dict) else None
-    if err in ("E201", "E202"):
-        continue  # control rechazado: no es un control valido
-    oraculo[";".join([cmd_up] + args[:-1])] = int(ctrl)
-
-model.CONTROL_ORACLE = oraculo
 
 # --- replay de la secuencia ---
 st = model.initial_state()

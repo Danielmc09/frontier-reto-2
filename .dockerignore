@@ -9,12 +9,14 @@ __pycache__/
 harness.py
 differential.py
 replay_examples.py
+fuzz.py
 test_smoke.py
 requirements-dev.txt
 
 # datos / entregables / material
 pruebas/
 experimentos.jsonl
+controles.jsonl
 captures.jsonl
 *.pdf
 *.png

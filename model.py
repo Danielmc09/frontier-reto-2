@@ -26,7 +26,8 @@ LIMITE_TRANSFER = 50000
 _CONTROL = re.compile(r"^[0-9]{1,2}$")
 # monto valido: entero positivo sin ceros a la izquierda.
 # Confirmado v2: "0", "-5", "abc", "1.5", "05" -> E303.
-_MONTO = re.compile(r"^[1-9][0-9]*$")
+# Tope: hasta 10 digitos (9999999999 pasa, 10000000000 da E303, en DEPOSITO y TRANSFER).
+_MONTO = re.compile(r"^[1-9][0-9]{0,9}$")
 
 # --- Checksum del control: ISO 7064 MOD 97-10 (el del IBAN) sobre el payload ---
 # El payload completo 'CMD;args' se pasa a digitos: los digitos quedan, cada letra
@@ -43,7 +44,7 @@ def _checksum(payload: str) -> int:
 
 
 def initial_state() -> dict:
-    return {"cuentas": {}, "ops": {}, "next_cuenta": 1, "next_op": 1}
+    return {"cuentas": {}, "titulares": {}, "ops": {}, "next_cuenta": 1, "next_op": 1}
 
 
 def _b(obj) -> bytes:
@@ -56,6 +57,29 @@ def _r(status, obj):
 
 def _err(code, msg, status):
     return _r(status, {"error": code, "mensaje": msg})
+
+
+def _distancia(a: str, b: str) -> int:
+    """Levenshtein: inserciones, borrados y sustituciones."""
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def _e301(cmd: str):
+    """E301 con 'sugerencia' si un comando conocido esta a distancia <= 2 (confirmado:
+    ATLA/XLTB/TRANSFERIR sugieren, XYZA a 3 y SALDOS a 4 no). Empate: el primero en ARITY
+    (supuesto)."""
+    mejor = min(ARITY, key=lambda k: _distancia(cmd, k))   # min devuelve el primero en empate
+    d = _distancia(cmd, mejor)
+    cuerpo = {"error": "E301", "mensaje": "comando desconocido "}   # OJO: espacio final
+    if d <= 2:
+        cuerpo["sugerencia"] = mejor
+    return _r(400, cuerpo)
 
 
 def _saldo(centavos: int) -> str:
@@ -108,7 +132,7 @@ def _msg(body, st):
             return _err("E202", "control inválido", 400)
 
     if cmd_up not in ARITY:
-        return _err("E301", "comando desconocido ", 400)   # OJO: espacio final
+        return _e301(cmd_up)
     if len(args) != ARITY[cmd_up]:
         return _err("E302", "aridad inválida", 400)
 
@@ -123,6 +147,7 @@ def _dispatch(cmd, args, st):
         acc = f"AC-{st['next_cuenta']:04d}"
         st["next_cuenta"] += 1
         st["cuentas"][acc] = 0
+        st["titulares"][acc] = args[0]
         return _r(201, {"cuentaId": acc})
 
     if cmd == "CONSULTA":
@@ -152,7 +177,9 @@ def _dispatch(cmd, args, st):
         if o not in st["cuentas"] or d not in st["cuentas"]:
             return _err("E401", "cuenta inexistente", 404)   # antes que E506 (lim-vs-cta)
         monto = int(monto_raw)
-        if monto > LIMITE_TRANSFER:
+        # el limite no aplica entre cuentas del mismo titular, nombre exacto con mayusculas
+        # (confirmado: Ana->Ana 60000 pasa, Ana->ana da E506; incidente.py titular)
+        if monto > LIMITE_TRANSFER and st["titulares"][o] != st["titulares"][d]:
             return _err("E506", "límite excedido", 422)
         if st["cuentas"][o] < monto:
             return _err("E507", "saldo insuficiente", 422)

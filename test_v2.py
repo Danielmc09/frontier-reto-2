@@ -53,7 +53,43 @@ base = [(m(f"{p};{model._checksum(p)}"), s, r) for p, s, r in [
 ]]
 fallos += correr(base)
 
-total = len(ej) + sum(len(p) for p in casos.values()) + len(base)
+# incidente.py afinar y anula-limite: tope de monto (10 digitos) y sugerencia de E301
+e303 = {"error": "E303", "mensaje": "monto inválido"}
+e401 = {"error": "E401", "mensaje": "cuenta inexistente"}
+sueltos = [(f"TRANSFER;AC-0001;AC-0002;{x}", s, r) for x, s, r in [
+    (9999999999, 404, e401), (10000000000, 400, e303), (10**19, 400, e303)]]
+e301 = {"error": "E301", "mensaje": "comando desconocido "}
+for cmd, sug in [("altas", "ALTA"), ("ATLA", "ALTA"), ("XLTB", "ALTA"), ("TRANSFERIR", "TRANSFER"),
+                 ("PONG", "PING"), ("DEPOSTO", "DEPOSITO"), ("SALDOS", None), ("XYZA", None), ("WXYZ", None)]:
+    sueltos.append((f"{cmd};AC-0001", 400, {**e301, "sugerencia": sug} if sug else e301))
+sueltos = [(m(f"{p};{model._checksum(p)}"), s, r) for p, s, r in sueltos]
+for paso in sueltos:
+    fallos += correr([paso])
+fallos += correr([(m(f"{p};{model._checksum(p)}"), s, r) for p, s, r in [
+    ("ALTA;Ana", 201, {"cuentaId": "AC-0001"}),
+    ("DEPOSITO;AC-0001;1000000000000", 400, e303)]])
+
+# incidente.py titular: el limite no aplica entre cuentas del mismo titular (nombre exacto)
+ok = lambda op: {"status": "recieved", "operacionId": op}
+e506 = {"error": "E506", "mensaje": "límite excedido"}
+titular = {
+    "titular": [("ALTA;Ana", 201, {"cuentaId": "AC-0001"}), ("ALTA;Ana", 201, {"cuentaId": "AC-0002"}),
+                ("DEPOSITO;AC-0001;100000", 200, ok("OP-0001")),
+                ("TRANSFER;AC-0001;AC-0002;60000", 200, ok("OP-0002")),
+                ("CONSULTA;AC-0002", 200, {"cuenta_id": "AC-0002", "saldo": "600.00"})],
+    "mayus": [("ALTA;Ana", 201, {"cuentaId": "AC-0001"}), ("ALTA;ana", 201, {"cuentaId": "AC-0002"}),
+              ("DEPOSITO;AC-0001;100000", 200, ok("OP-0001")),
+              ("TRANSFER;AC-0001;AC-0002;60000", 422, e506)],
+    "999999": [("ALTA;Ana", 201, {"cuentaId": "AC-0001"}), ("ALTA;Beto", 201, {"cuentaId": "AC-0002"}),
+               ("ALTA;Ana", 201, {"cuentaId": "AC-0003"}), ("DEPOSITO;AC-0001;100000", 200, ok("OP-0001")),
+               ("TRANSFER;AC-0001;AC-0003;999999", 422, {"error": "E507", "mensaje": "saldo insuficiente"}),
+               ("TRANSFER;AC-0001;AC-0003;60000", 200, ok("OP-0002"))],
+}
+for pasos in titular.values():
+    fallos += correr([(m(f"{p};{model._checksum(p)}"), s, r) for p, s, r in pasos])
+
+total = (len(ej) + sum(len(p) for p in casos.values()) + len(base) + len(sueltos) + 2
+         + sum(len(p) for p in titular.values()))
 for f in fallos:
     print("FALLA", f)
 print(f"{total - len(fallos)}/{total} pasos como la v2")

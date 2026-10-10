@@ -13,7 +13,7 @@ Todo se loguea en experimentos.jsonl con su hipotesis.
   5) supuestos: lo que model.py hace sin evidencia (E304 vs otros errores, monto "05",
               control 99/"00", "PING;"), comparado contra el modelo en el momento.
 
-  python incidente.py [umbral|replay|anula|meta|supuestos]   # sin argumento corre las tres
+  python incidente.py [umbral|replay|anula|meta|supuestos|afinar|anula-limite|titular]   # sin argumento corre las tres
 
   TOKEN=<token> python incidente.py
   # o Docker:
@@ -161,53 +161,113 @@ def meta():
     print(regla(cols))
 
 
-def supuestos():
+def _sondear(titulo, casos):
+    """casos = [(nombre, hipotesis, pasos)]; cada caso arranca con reset. Compara cada paso
+    del original contra model.py en el momento y lo loguea todo."""
     from bordes import _igual, _modelo, _original
     import model
-    cols = (("SUPUESTO", 16), ("MENSAJE", 32), ("V2 (ORIGINAL)", 34), ("MODELO", 9))
-    print("\n=== 5) Supuestos del modelo contra la v2 ===\n")
-    alta = [c("ALTA;Ana"), c("ALTA;Beto"), c("DEPOSITO;AC-0001;100000")]
-    casos = [  # (supuesto, hipotesis, pasos); el ultimo paso es la sonda
-        ("E304-vs-E401", "orden: E304 (misma cuenta) antes que E401 (cuenta inexistente)",
-         [c("TRANSFER;AC-9999;AC-9999;100")]),
-        ("E304-vs-E303", "orden: E303 (monto) antes que E304 (misma cuenta)",
-         alta + [c("TRANSFER;AC-0001;AC-0001;0")]),
-        ("E304-vs-E506", "orden: E304 (misma cuenta) antes que E506 (limite)",
-         alta + [c("TRANSFER;AC-0001;AC-0001;60000")]),
-        ("monto-05", "monto con cero a la izquierda ('05') da E303",
-         alta + [c("DEPOSITO;AC-0001;05")]),
-        ("control-99", "control 99 esta bien formado: da E202 (no E201)", alta + ["CONSULTA;AC-0001;99"]),
-        ("control-00", "control '00' esta mal formado: da E201", alta + ["CONSULTA;AC-0001;00"]),
-        ("ping-vacio", "'PING;' da E104 (segmento vacio)", ["PING;"]),
-    ]
+    cols = (("CASO", 16), ("MENSAJE", 34), ("ORIGINAL", 36), ("MODELO", 9))
+    print(f"\n=== {titulo} ===\n")
     print(encabezado(cols))
     difs = []
-    for k, (sup, hip, pasos) in enumerate(casos):
+    for k, (nombre, hip, pasos) in enumerate(casos):
         if k:
             print(regla(cols))
         reset()
         estado = model.initial_state()
         for j, paso in enumerate(pasos, 1):
             sonda = j == len(pasos)
-            orig = _original(paso, f"v2-supuesto-{sup}", hip if sonda else f"preparar estado para: {hip}")
+            orig = _original(paso, f"v2-{nombre}", hip if sonda else f"preparar estado para: {hip}")
             *mod, estado = _modelo(paso, estado)
-            if not sonda:
-                continue
             ok = _igual(orig, mod)
-            print(fila(cols, sup, paso, resumen(*orig), "=" if ok else "DIFERENTE"))
+            print(fila(cols, nombre if j == 1 else "", paso, resumen(*orig), "=" if ok else "DIFERENTE"))
             if not ok:
                 print(fila(cols, "", "", "modelo: " + resumen(*mod), ""))
-                difs.append((sup, paso, orig, mod))
+                difs.append((nombre, paso, orig, mod))
     print(regla(cols))
-    print(f"\n{len(casos) - len(difs)}/{len(casos)} supuestos confirmados")
-    for sup, paso, orig, mod in difs:
-        print(f"\nDIFERENTE {sup} {paso!r}\n  v2    : {orig[0]} {json.dumps(orig[1], ensure_ascii=False)}"
-              f"\n  modelo: {mod[0]} {json.dumps(mod[1], ensure_ascii=False)}")
+    print(f"\n{sum(len(p) for _, _, p in casos) - len(difs)}/{sum(len(p) for _, _, p in casos)} pasos iguales al modelo")
+    for nombre, paso, orig, mod in difs:
+        print(f"\nDIFERENTE {nombre} {paso!r}\n  original: {orig[0]} {json.dumps(orig[1], ensure_ascii=False)}"
+              f"\n  modelo  : {mod[0]} {json.dumps(mod[1], ensure_ascii=False)}")
+
+
+def supuestos():
+    alta = [c("ALTA;Ana"), c("ALTA;Beto"), c("DEPOSITO;AC-0001;100000")]
+    _sondear("5) Supuestos del modelo contra la v2", [
+        ("E304-vs-E401", "orden: E304 (misma cuenta) antes que E401 (cuenta inexistente)",
+         [c("TRANSFER;AC-9999;AC-9999;100")]),
+        ("E304-vs-E303", "orden: E303 (monto) antes que E304 (misma cuenta)",
+         alta + [c("TRANSFER;AC-0001;AC-0001;0")]),
+        ("E304-vs-E506", "orden: E304 (misma cuenta) antes que E506 (limite)",
+         alta + [c("TRANSFER;AC-0001;AC-0001;60000")]),
+        ("monto-05", "monto con cero a la izquierda ('05') da E303", alta + [c("DEPOSITO;AC-0001;05")]),
+        ("control-99", "control 99 esta bien formado: da E202 (no E201)", alta + ["CONSULTA;AC-0001;99"]),
+        ("control-00", "control '00' esta mal formado: da E201", alta + ["CONSULTA;AC-0001;00"]),
+        ("ping-vacio", "'PING;' da E104 (segmento vacio)", ["PING;"]),
+    ])
+
+
+def afinar():
+    """Lo que dejo aleatorio.py (semilla 1): E506 vs E507, tope de monto y sugerencia de E301."""
+    dos = [c("ALTA;Ana"), c("ALTA;Beto")]
+    mil = dos + [c("DEPOSITO;AC-0001;1000")]
+    t = lambda x: c(f"TRANSFER;AC-0001;AC-0002;{x}")
+    casos = [
+        ("lim-saldo0", "saldo 0 y 150000: E506 (limite) o E507 (saldo)", dos + [t(150000)]),
+        ("lim-saldo0-60k", "saldo 0 y 60000: E506 o E507", dos + [t(60000)]),
+    ]
+    for x in (200000, 300000, 500000, 999999):
+        casos.append((f"lim-{x}", f"saldo 1000 y {x}: hasta que monto aplica E506", mil + [t(x)]))
+    for x in (10**7, 10**9, 2**31 - 1, 2**31, 10**12, 2**53, 2**63 - 1, 2**63, 10**19):
+        casos.append((f"tope-{x}", f"TRANSFER {x}: E303 (tope de monto) o E401 (sin cuentas)",
+                      [c(f"TRANSFER;AC-0001;AC-0002;{x}")]))
+    for x in (10**12, 10**20):
+        casos.append((f"dep-{x}", f"DEPOSITO {x}: tiene tope (E303) o pasa", [c("ALTA;Ana"), c(f"DEPOSITO;AC-0001;{x}")]))
+    for cmd in ("ALT", "ALTAX", "ALTB", "ATLA", "ALTAAA", "XLTB", "DEPOSTO", "DEPOSITOS",
+                "CONSULTAR", "TRANSFERIR", "ANULAR", "PIN"):
+        casos.append((f"sug-{cmd}", f"E301 de '{cmd}': trae sugerencia o no", [c(f"{cmd};AC-0001")]))
+    _sondear("6) Afinar: E506 vs E507, tope de monto, sugerencia de E301", casos)
+
+
+def anula_limite():
+    """aleatorio.py #280: tras una ANULA, TRANSFER 999999 dio E507 en vez de E506."""
+    t = lambda o, d, x: c(f"TRANSFER;{o};{d};{x}")
+    dos = [c("ALTA;Ana"), c("ALTA;Beto")]
+    casos = [
+        ("A-anula", "tras ANULA de un deposito, TRANSFER 999999 desde saldo 0 da E507 (no E506)",
+         dos + [c("DEPOSITO;AC-0001;1000"), c("ANULA;OP-0001"), t("AC-0002", "AC-0001", 999999)]),
+        ("B-sin-anula", "sin ANULA, tras deposito de 120000, TRANSFER 999999 desde saldo 0 da E506",
+         dos + [c("DEPOSITO;AC-0001;120000"), t("AC-0002", "AC-0001", 999999)]),
+        ("C-anula-pasa", "tras una ANULA, TRANSFER 60000 con saldo suficiente pasa el limite",
+         dos + [c("DEPOSITO;AC-0001;200000"), c("DEPOSITO;AC-0001;1000"), c("ANULA;OP-0002"),
+                t("AC-0001", "AC-0002", 60000), c("CONSULTA;AC-0001")]),
+        ("D-sin-estado", "tope de monto (E303 vs E401 sin cuentas) y sugerencia de E301 a distancia 3/4",
+         [t("AC-0001", "AC-0002", x) for x in (4294967295, 4294967296, 9999999999, 10000000000,
+                                                  99999999999, 100000000000, 999999999999)]
+         + [c("XYZA;AC-0001"), c("WXYZ;AC-0001"), c("PONG;AC-0001")]),
+    ]
+    _sondear("7) ANULA y limite, tope de monto, sugerencia a distancia 3", casos)
+
+
+def titular():
+    """aleatorio.py #280: AC-0007 y AC-0001 eran los dos de 'José'; TRANSFER 999999 dio E507.
+    Hipotesis: el limite de 50000 no aplica entre cuentas del mismo titular."""
+    t = lambda o, d, x: c(f"TRANSFER;{o};{d};{x}")
+    _sondear("8) Limite entre cuentas del mismo titular", [
+        ("titular", "mismo titular (Ana y Ana): TRANSFER 60000 pasa, el limite no aplica",
+         [c("ALTA;Ana"), c("ALTA;Ana"), c("DEPOSITO;AC-0001;100000"),
+          t("AC-0001", "AC-0002", 60000), c("CONSULTA;AC-0002")]),
+        ("titular-mayus", "'Ana' y 'ana' cuentan como el mismo titular",
+         [c("ALTA;Ana"), c("ALTA;ana"), c("DEPOSITO;AC-0001;100000"), t("AC-0001", "AC-0002", 60000)]),
+        ("titular-999999", "mismo titular con otra cuenta en el medio: 999999 da E507 y 60000 pasa",
+         [c("ALTA;Ana"), c("ALTA;Beto"), c("ALTA;Ana"), c("DEPOSITO;AC-0001;100000"),
+          t("AC-0001", "AC-0003", 999999), t("AC-0001", "AC-0003", 60000)]),
+    ])
 
 
 if __name__ == "__main__":
     import sys
-    fases = {"umbral": umbral, "replay": replay, "anula": anula, "meta": meta, "supuestos": supuestos}
+    fases = {"umbral": umbral, "replay": replay, "anula": anula, "meta": meta, "supuestos": supuestos, "afinar": afinar, "anula-limite": anula_limite, "titular": titular}
     print("Incidente FR-0153: sondas contra el original (log: experimentos.jsonl)")
     for nombre in (sys.argv[1:] or fases):
         fases[nombre]()

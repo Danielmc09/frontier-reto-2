@@ -56,7 +56,7 @@ async def app(scope, receive, send):
 
     if method == "GET" and path == "/health":
         status, resp_headers, resp_body = (
-            200, [(b"content-type", b"application/json")], b'{"status":"ok"}')
+            200, [(b"content-type", b"application/json")], b'{"ok":true}')
 
     elif not _auth_ok(auth):
         # Confirmado por fuzzing: el original responde 401 E001 ante token malo/ausente.

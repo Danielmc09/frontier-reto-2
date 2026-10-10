@@ -6,7 +6,7 @@ status + cuerpo con la regla del evaluador.
 El control se valida con el checksum real (model.control_valido), asi que
 esto prueba interprete y checksum juntos.
 
-Uso:  EX=pruebas/ejemplos.jsonl python replay_examples.py
+Uso:  python replay_examples.py   (EX=pruebas/ejemplos.jsonl para la v1)
 """
 import json
 import os
@@ -14,7 +14,8 @@ import model
 from compare import resp_equal
 from tabla import encabezado, fila, regla, resumen
 
-EX = os.environ.get("EX", "pruebas/ejemplos.jsonl")
+# la v2 es la vigente (FR-0153); los ejemplos de la v1 siguen en pruebas/ejemplos.jsonl
+EX = os.environ.get("EX", "pruebas/ejemplos_v2.jsonl")
 COLS = (("N", 3), ("MENSAJE", 34), ("RESPUESTA ESPERADA (original)", 56), ("RESULTADO", 9))
 
 lines = [json.loads(l) for l in open(EX, encoding="utf-8") if l.strip()]

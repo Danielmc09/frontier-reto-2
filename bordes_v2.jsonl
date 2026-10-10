@@ -1,0 +1,110 @@
+{"caso": "monto-0", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "monto-0", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "monto-0", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "monto-0", "paso": 4, "request": "DEPOSITO;AC-0001;0;31", "status": 400, "response": {"error": "E303", "mensaje": "monto inválido"}}
+{"caso": "monto-neg", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "monto-neg", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "monto-neg", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "monto-neg", "paso": 4, "request": "DEPOSITO;AC-0001;-5;16", "status": 400, "response": {"error": "E303", "mensaje": "monto inválido"}}
+{"caso": "monto-texto", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "monto-texto", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "monto-texto", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "monto-texto", "paso": 4, "request": "DEPOSITO;AC-0001;abc;13", "status": 400, "response": {"error": "E303", "mensaje": "monto inválido"}}
+{"caso": "monto-decimal", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "monto-decimal", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "monto-decimal", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "monto-decimal", "paso": 4, "request": "DEPOSITO;AC-0001;1.5;62", "status": 400, "response": {"error": "E303", "mensaje": "monto inválido"}}
+{"caso": "monto-grande", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "monto-grande", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "monto-grande", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "monto-grande", "paso": 4, "request": "DEPOSITO;AC-0001;999999;4", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0002"}}
+{"caso": "monto-vs-cta", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "monto-vs-cta", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "monto-vs-cta", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "monto-vs-cta", "paso": 4, "request": "DEPOSITO;AC-9999;0;15", "status": 400, "response": {"error": "E303", "mensaje": "monto inválido"}}
+{"caso": "transf-0", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "transf-0", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "transf-0", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "transf-0", "paso": 4, "request": "TRANSFER;AC-0001;AC-0002;0;44", "status": 400, "response": {"error": "E303", "mensaje": "monto inválido"}}
+{"caso": "transf-neg", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "transf-neg", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "transf-neg", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "transf-neg", "paso": 4, "request": "TRANSFER;AC-0001;AC-0002;-5;29", "status": 400, "response": {"error": "E303", "mensaje": "monto inválido"}}
+{"caso": "umbral", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "umbral", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "umbral", "paso": 3, "request": "DEPOSITO;AC-0001;900000;77", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "umbral", "paso": 4, "request": "TRANSFER;AC-0001;AC-0002;100001;9", "status": 422, "response": {"error": "E506", "mensaje": "límite excedido"}}
+{"caso": "umbral", "paso": 5, "request": "TRANSFER;AC-0001;AC-0002;110000;82", "status": 422, "response": {"error": "E506", "mensaje": "límite excedido"}}
+{"caso": "umbral", "paso": 6, "request": "TRANSFER;AC-0001;AC-0002;119999;58", "status": 422, "response": {"error": "E506", "mensaje": "límite excedido"}}
+{"caso": "lim-vs-saldo", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "lim-vs-saldo", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "lim-vs-saldo", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "lim-vs-saldo", "paso": 4, "request": "TRANSFER;AC-0001;AC-0002;150000;71", "status": 422, "response": {"error": "E506", "mensaje": "límite excedido"}}
+{"caso": "lim-vs-cta", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "lim-vs-cta", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "lim-vs-cta", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "lim-vs-cta", "paso": 4, "request": "TRANSFER;AC-9999;AC-0001;150000;72", "status": 404, "response": {"error": "E401", "mensaje": "cuenta inexistente"}}
+{"caso": "transf-misma", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "transf-misma", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "transf-misma", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "transf-misma", "paso": 4, "request": "TRANSFER;AC-0001;AC-0001;100;17", "status": 400, "response": {"error": "E304", "mensaje": "origen y destino iguales"}}
+{"caso": "transf-misma", "paso": 5, "request": "CONSULTA;AC-0001;14", "status": 200, "response": {"cuenta_id": "AC-0001", "saldo": "10.00"}}
+{"caso": "transf-exacto", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "transf-exacto", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "transf-exacto", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "transf-exacto", "paso": 4, "request": "TRANSFER;AC-0001;AC-0002;1000;37", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0002"}}
+{"caso": "transf-exacto", "paso": 5, "request": "CONSULTA;AC-0001;14", "status": 200, "response": {"cuenta_id": "AC-0001", "saldo": "0.00"}}
+{"caso": "anula-inex", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "anula-inex", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "anula-inex", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "anula-inex", "paso": 4, "request": "ANULA;OP-9999;51", "status": 404, "response": {"error": "E402", "mensaje": "operación inexistente"}}
+{"caso": "anula-dep", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "anula-dep", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "anula-dep", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "anula-dep", "paso": 4, "request": "ANULA;OP-0001;72", "status": 200, "response": {"ok": true, "anulada": "OP-0001"}}
+{"caso": "anula-dep", "paso": 5, "request": "CONSULTA;AC-0001;14", "status": 200, "response": {"cuenta_id": "AC-0001", "saldo": "0.00"}}
+{"caso": "anula-negativo", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "anula-negativo", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "anula-negativo", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "anula-negativo", "paso": 4, "request": "TRANSFER;AC-0001;AC-0002;1000;37", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0002"}}
+{"caso": "anula-negativo", "paso": 5, "request": "ANULA;OP-0001;72", "status": 200, "response": {"ok": true, "anulada": "OP-0001"}}
+{"caso": "anula-negativo", "paso": 6, "request": "CONSULTA;AC-0001;14", "status": 200, "response": {"cuenta_id": "AC-0001", "saldo": "-10.00"}}
+{"caso": "anula-mal-id", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "anula-mal-id", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "anula-mal-id", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "anula-mal-id", "paso": 4, "request": "ANULA;XYZ;44", "status": 404, "response": {"error": "E402", "mensaje": "operación inexistente"}}
+{"caso": "sin-control", "paso": 1, "request": "ZZZ", "status": 400, "response": {"error": "E103", "mensaje": "falta control"}}
+{"caso": "ping-solo", "paso": 1, "request": "PING", "status": 400, "response": {"error": "E103", "mensaje": "falta control"}}
+{"caso": "ping-aridad", "paso": 1, "request": "PING;1;2", "status": 400, "response": {"error": "E302", "mensaje": "aridad inválida"}}
+{"caso": "ping-ctrl", "paso": 1, "request": "PING;0", "status": 200, "response": {"pong": true}}
+{"caso": "ping-ctrl", "paso": 2, "request": "PING;XX", "status": 200, "response": {"pong": true}}
+{"caso": "m-vacio", "paso": 1, "request": "", "status": 400, "response": {"error": "E103", "mensaje": "falta control"}}
+{"caso": "solo-sep", "paso": 1, "request": ";", "status": 400, "response": {"error": "E104", "mensaje": "segmento vacío"}}
+{"caso": "ctrl-neg", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "ctrl-neg", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "ctrl-neg", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "ctrl-neg", "paso": 4, "request": "CONSULTA;AC-0001;-14", "status": 400, "response": {"error": "E201", "mensaje": "control mal formado"}}
+{"caso": "ctrl-ceros", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "ctrl-ceros", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "ctrl-ceros", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "ctrl-ceros", "paso": 4, "request": "CONSULTA;AC-0001;014", "status": 400, "response": {"error": "E201", "mensaje": "control mal formado"}}
+{"caso": "ctrl-mas97", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "ctrl-mas97", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "ctrl-mas97", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "ctrl-mas97", "paso": 4, "request": "CONSULTA;AC-0001;111", "status": 400, "response": {"error": "E201", "mensaje": "control mal formado"}}
+{"caso": "ctrl-espacio", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "ctrl-espacio", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "ctrl-espacio", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "ctrl-espacio", "paso": 4, "request": "CONSULTA;AC-0001; 14", "status": 400, "response": {"error": "E201", "mensaje": "control mal formado"}}
+{"caso": "cmd-minus", "paso": 1, "request": "alta;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "alta-vacio", "paso": 1, "request": "ALTA;;85", "status": 400, "response": {"error": "E104", "mensaje": "segmento vacío"}}
+{"caso": "alta-espacio", "paso": 1, "request": "ALTA;Ana Maria;44", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "alta-enie", "paso": 1, "request": "ALTA;Muñoz;25", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "cta-minus", "paso": 1, "request": "ALTA;Ana;50", "status": 201, "response": {"cuentaId": "AC-0001"}}
+{"caso": "cta-minus", "paso": 2, "request": "ALTA;Beto;11", "status": 201, "response": {"cuentaId": "AC-0002"}}
+{"caso": "cta-minus", "paso": 3, "request": "DEPOSITO;AC-0001;1000;35", "status": 200, "response": {"status": "recieved", "operacionId": "OP-0001"}}
+{"caso": "cta-minus", "paso": 4, "request": "CONSULTA;ac-0001;14", "status": 404, "response": {"error": "E401", "mensaje": "cuenta inexistente"}}
+{"caso": "body-nojson", "paso": 1, "request": "hola", "status": 400, "response": {"error": "E100", "mensaje": "json inválido"}}
+{"caso": "body-sin-m", "paso": 1, "request": "{\"x\": \"PING;64\"}", "status": 400, "response": {"error": "E102", "mensaje": "falta m"}}
+{"caso": "body-m-num", "paso": 1, "request": "{\"m\": 5}", "status": 400, "response": {"error": "E102", "mensaje": "falta m"}}
+{"caso": "body-vacio", "paso": 1, "request": "", "status": 400, "response": {"error": "E100", "mensaje": "json inválido"}}

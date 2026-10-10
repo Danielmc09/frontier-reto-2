@@ -20,7 +20,7 @@ from fuzz import reset, send, _client  # noqa: E402
 from compare import bodies_equal
 from tabla import encabezado, fila, regla, resumen
 
-EX = os.environ.get("EX", "pruebas/ejemplos.jsonl")
+EX = os.environ.get("EX", "pruebas/ejemplos_v2.jsonl")
 
 COLS = (("BLOQUE", 9), ("CHEQUEO", 34), ("RESPUESTA ESPERADA (baseline)", 56), ("RESULTADO", 9))
 

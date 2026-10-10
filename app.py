@@ -2,9 +2,10 @@
 app.py - Transporte ASGI minimo. No decide nada: mueve bytes.
 
 Contrato del entrypoint (Reto 2):
-- GET /health          -> 200 (readiness, SIN auth)
-- Authorization: Bearer <token del equipo> en el resto de las llamadas.
-  Con otro token o sin token: responde "como el original" (TODO forense).
+- GET /health          -> 200 con el token (sin token: 401 E001, como el original)
+- Authorization: Bearer <token del equipo> en las rutas conocidas. Con otro token o
+  sin token: 401 E001, como el original. Una ruta inexistente da 404 E404 antes de
+  mirar el token.
 - POST /__reset        -> reinicia el estado (con el token del equipo).
                           Lo llaman antes de cada test.
 - cualquier otra ruta  -> model.respond() (superficie replicada del original).
@@ -20,6 +21,7 @@ TEAM_TOKEN = os.environ.get("TEAM_TOKEN", "")
 RESET_TOKEN = os.environ.get("RESET_TOKEN", "")
 
 STATE = initial_state()
+RUTAS = {("POST", "/msg"), ("POST", "/__reset"), ("GET", "/health")}  # las que exigen token
 
 
 def _auth_ok(auth: str) -> bool:
@@ -54,9 +56,11 @@ async def app(scope, receive, send):
 
     global STATE
 
-    if method == "GET" and path == "/health":
-        status, resp_headers, resp_body = (
-            200, [(b"content-type", b"application/json")], b'{"ok":true}')
+    if (method, path) not in RUTAS:
+        # Ruta antes que auth: una ruta inexistente da 404 E404 aunque no haya token
+        # (confirmado v2, incidente.py entrada). model.respond responde el E404.
+        (status, resp_headers, resp_body), STATE = respond(
+            method, path, query, headers, body, STATE)
 
     elif not _auth_ok(auth):
         # Confirmado por fuzzing: el original responde 401 E001 ante token malo/ausente.
@@ -64,9 +68,15 @@ async def app(scope, receive, send):
             401, [(b"content-type", b"application/json")],
             '{"error":"E001","mensaje":"no autorizado"}'.encode("utf-8"))
 
+    elif method == "GET" and path == "/health":
+        # con token: 200 {"ok":true}; sin token cae arriba en E001, igual que el original
+        # (confirmado v2, incidente.py http). El contrato llama a /health con el token.
+        status, resp_headers, resp_body = (
+            200, [(b"content-type", b"application/json")], b'{"ok":true}')
+
     elif method == "POST" and path == "/__reset":
         STATE = initial_state()
-        # TODO(forense): replicar el cuerpo/status exacto del /__reset del original.
+        # 200 {"ok":true}, igual que el original (confirmado v1 y v2, incidente.py meta).
         status, resp_headers, resp_body = (
             200, [(b"content-type", b"application/json")], b'{"ok":true}')
 

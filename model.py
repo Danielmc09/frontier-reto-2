@@ -103,7 +103,7 @@ def respond(method, path, query, headers, body, state):
 
 def _msg(body, st):
     # --- cuerpo: confirmado v2 (bordes_v2.jsonl): no-JSON o vacio -> E100; sin 'm' o 'm'
-    # que no es string -> E102. Un JSON que no es objeto -> E102 es supuesto.
+    # que no es string, 'm' nulo o un JSON que no es objeto ('[]') -> E102 (confirmado).
     try:
         data = json.loads(body)
     except Exception:

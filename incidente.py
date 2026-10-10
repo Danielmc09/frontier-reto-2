@@ -13,7 +13,7 @@ Todo se loguea en experimentos.jsonl con su hipotesis.
   5) supuestos: lo que model.py hace sin evidencia (E304 vs otros errores, monto "05",
               control 99/"00", "PING;"), comparado contra el modelo en el momento.
 
-  python incidente.py [umbral|replay|anula|meta|supuestos|afinar|anula-limite|titular]   # sin argumento corre las tres
+  python incidente.py [umbral|replay|anula|meta|supuestos|afinar|anula-limite|titular|variantes|entrada|http]   # sin argumento corre las tres
 
   TOKEN=<token> python incidente.py
   # o Docker:
@@ -178,6 +178,9 @@ def _sondear(titulo, casos):
         for j, paso in enumerate(pasos, 1):
             sonda = j == len(pasos)
             orig = _original(paso, f"v2-{nombre}", hip if sonda else f"preparar estado para: {hip}")
+            if orig[0] == 429:
+                print(f"\nRATE-LIMIT de infra en {nombre}: se corta para no seguir gastando.")
+                return
             *mod, estado = _modelo(paso, estado)
             ok = _igual(orig, mod)
             print(fila(cols, nombre if j == 1 else "", paso, resumen(*orig), "=" if ok else "DIFERENTE"))
@@ -265,9 +268,108 @@ def titular():
     ])
 
 
+def variantes():
+    """Tras la corrida 3 (82/100): 7 tests fallan en el primer request y 11 mas adelante.
+    Espacios en el mensaje, mensajes repetidos, ANULA con el dinero ya gastado, saldo negativo
+    y ANULA de una transferencia entre cuentas del mismo titular."""
+    t = lambda o, d, x: c(f"TRANSFER;{o};{d};{x}")
+    _sondear("9) Variantes: espacios, repetidos, ANULA con saldo gastado, saldo negativo", [
+        ("espacios", "espacios alrededor del comando y de los campos: se recortan o no",
+         [" PING;64", "PING ;64", "PING;64 ", "\tPING;64", "   ",
+          " ALTA;Ana;50", "ALTA ;Ana;50", "ALTA; Ana;50", "ALTA;Ana ;50",
+          "CONSULTA; AC-0001;14", "CONSULTA;AC-0001 ;14"]),
+        ("repetidos", "el mismo DEPOSITO/TRANSFER dos veces seguidas: se procesa dos veces o se rechaza",
+         [c("ALTA;Ana"), c("ALTA;Beto"), c("DEPOSITO;AC-0001;1000"), c("DEPOSITO;AC-0001;1000"),
+          t("AC-0001", "AC-0002", 100), t("AC-0001", "AC-0002", 100), c("CONSULTA;AC-0001")]),
+        ("anula-gastado", "ANULA de una TRANSFER cuyo destino ya gasto el dinero; operar con saldo negativo",
+         [c("ALTA;Ana"), c("ALTA;Beto"), c("ALTA;Caro"), c("DEPOSITO;AC-0001;1000"),
+          t("AC-0001", "AC-0002", 1000), t("AC-0002", "AC-0003", 1000), c("ANULA;OP-0002"),
+          c("CONSULTA;AC-0002"), t("AC-0002", "AC-0003", 1), c("DEPOSITO;AC-0002;500"),
+          c("CONSULTA;AC-0002")]),
+        ("anula-titular", "ANULA de una TRANSFER exenta del limite (mismo titular) y del deposito previo",
+         [c("ALTA;Ana"), c("ALTA;Ana"), c("DEPOSITO;AC-0001;100000"), t("AC-0001", "AC-0002", 60000),
+          c("ANULA;OP-0002"), c("CONSULTA;AC-0001"), c("ANULA;OP-0001"), c("CONSULTA;AC-0001")]),
+    ])
+
+
+def entrada():
+    """Seccion Entrada del enunciado: limites, nombres con simbolos, JSON raro y el orden
+    auth/ruta sin token (la evidencia v1 de 'auth antes que ruta' es solo de /msg)."""
+    from bordes import raw
+    _sondear("10a) Entrada: limites de tamano, nombres con simbolos, JSON raro", [
+        ("entrada", "limites de largo del nombre, simbolos en el nombre y JSON con forma rara",
+         [c("ALTA;" + "x" * n) for n in (41, 100, 256, 1000)]
+         + [c(f"ALTA;{n}") for n in ("Ana.B", "Ana_B", "Ana@B", "Ana/B", "😀")]
+         + [raw('{"m": "PING;64", "x": 1}'), raw('{"m": null}'), raw("[]")]),
+    ])
+    # sin token / token malo: lo responde app.py (auth antes que todo, salvo /health)
+    cols = (("REQUEST", 34), ("ORIGINAL", 40), ("NUESTRO APP", 30), ("", 9))
+    print("\n=== 10b) Auth y ruta sin token ===\n")
+    print(encabezado(cols))
+    e001 = (401, {"error": "E001", "mensaje": "no autorizado"})
+    for metodo, ruta, hdr in [("GET", "/nope", {"Authorization": ""}),
+                              ("POST", "/__reset", {"Authorization": ""}),
+                              ("POST", "/__reset", {"Authorization": "Bearer token-malo"})]:
+        _pace()
+        r = _client.request(metodo, ruta, headers=hdr)
+        r2 = _safe_json(r)
+        que = f"{metodo} {ruta} " + ("sin token" if hdr["Authorization"] == "" else "token malo")
+        _log("v2-entrada", None, r.status_code, r2, r.headers.get("X-Req"),
+             f"v2: {que} -> E001 (auth antes que la ruta) o 404", extra={"ruta": f"{metodo} {ruta}"})
+        igual = r.status_code == e001[0] and r2 == e001[1]
+        print(fila(cols, que, resumen(r.status_code, r2), "=" if igual else resumen(*e001),
+                   "OK" if igual else "DIFERENTE"))
+    print(regla(cols))
+
+
+def http():
+    """Capa HTTP: variantes de ruta, metodo y esquema de auth. Se compara contra app.py
+    corriendo en este mismo proceso con el mismo token (no contra model.py)."""
+    import asyncio
+    import os
+    import httpx
+    from fuzz import TOKEN
+    os.environ["TEAM_TOKEN"] = TOKEN
+    from app import app as nuestro
+
+    auth = {"ok": f"Bearer {TOKEN}", "sin": "", "minus": f"bearer {TOKEN}"}
+    pasos = [  # (metodo, ruta, auth, manda PING)
+        ("GET", "/health", "sin", False), ("GET", "/__reset", "ok", False),
+        ("GET", "/__reset", "sin", False), ("POST", "/msg/", "ok", True),
+        ("POST", "/MSG", "ok", True), ("PUT", "/msg", "ok", True),
+        ("POST", "/msg?x=1", "ok", True), ("POST", "/msg", "minus", True),
+        ("DELETE", "/nope", "sin", False), ("POST", "/health", "ok", False),
+    ]
+
+    async def local(metodo, ruta, hdr, body):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=nuestro), base_url="http://t") as cl:
+            r = await cl.request(metodo, ruta, headers=hdr, json=body)
+            return r.status_code, _safe_json(r)
+
+    cols = (("REQUEST", 30), ("ORIGINAL", 40), ("NUESTRO APP", 34), ("", 9))
+    print("\n=== 11) Capa HTTP: rutas, metodos y esquema de auth ===\n")
+    print(encabezado(cols))
+    for metodo, ruta, a_, ping in pasos:
+        hdr = {"Authorization": auth[a_]}
+        body = {"m": "PING;64"} if ping else None
+        _pace()
+        r = _client.request(metodo, ruta, headers=hdr, json=body)
+        orig = (r.status_code, _safe_json(r))
+        if r.status_code == 429:
+            print("\nRATE-LIMIT de infra: se corta para no seguir gastando.")
+            return
+        que = f"{metodo} {ruta} ({'token ' + a_ if a_ != 'sin' else 'sin token'})"
+        _log("v2-http", body["m"] if body else None, orig[0], orig[1], r.headers.get("X-Req"),
+             f"v2: que responde {que}", extra={"ruta": f"{metodo} {ruta}", "auth": a_})
+        mio = asyncio.run(local(metodo, ruta, hdr, body))
+        igual = orig == mio
+        print(fila(cols, que, resumen(*orig), "=" if igual else resumen(*mio), "OK" if igual else "DIFERENTE"))
+    print(regla(cols))
+
+
 if __name__ == "__main__":
     import sys
-    fases = {"umbral": umbral, "replay": replay, "anula": anula, "meta": meta, "supuestos": supuestos, "afinar": afinar, "anula-limite": anula_limite, "titular": titular}
+    fases = {"umbral": umbral, "replay": replay, "anula": anula, "meta": meta, "supuestos": supuestos, "afinar": afinar, "anula-limite": anula_limite, "titular": titular, "variantes": variantes, "entrada": entrada, "http": http}
     print("Incidente FR-0153: sondas contra el original (log: experimentos.jsonl)")
     for nombre in (sys.argv[1:] or fases):
         fases[nombre]()

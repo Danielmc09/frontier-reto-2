@@ -36,9 +36,10 @@ USER appuser
 
 EXPOSE 8000
 
-# Healthcheck del contenedor contra /health (sin auth, 200 cuando esta listo).
+# Healthcheck del contenedor contra /health con el token del equipo: sin token da 401
+# E001, igual que el original.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD python -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('PORT','8000')+'/health').getcode()==200 else 1)"
+  CMD python -c "import os,urllib.request as u,sys; r=u.Request('http://127.0.0.1:'+os.environ.get('PORT','8000')+'/health',headers={'Authorization':'Bearer '+os.environ.get('TEAM_TOKEN','')}); sys.exit(0 if u.urlopen(r).getcode()==200 else 1)"
 
 # IMPORTANTE: UN SOLO worker / UNA SOLA instancia.
 # El estado vive en memoria del proceso; varios workers o replicas = estados

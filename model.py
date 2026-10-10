@@ -88,8 +88,8 @@ def respond(method, path, query, headers, body, state):
     """Superficie del servicio. Conocido: POST /msg. Resto: TODO(forense)."""
     if method == "POST" and path == "/msg":
         return _msg(body, state), state
-    # TODO(forense): que responde el original en GET / y rutas inexistentes.
-    return _r(404, {"error": "not found"}), state
+    # Confirmado por fuzzing: cualquier otra ruta/metodo -> 404 E404.
+    return _err("E404", "ruta desconocida", 404), state
 
 
 def _msg(body, st):

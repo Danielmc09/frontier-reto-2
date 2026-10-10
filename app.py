@@ -59,10 +59,10 @@ async def app(scope, receive, send):
             200, [(b"content-type", b"application/json")], b'{"status":"ok"}')
 
     elif not _auth_ok(auth):
-        # TODO(forense): replicar EXACTO el comportamiento del original ante
-        # token invalido o ausente. Provisional hasta fuzzear (marcar supuesto).
+        # Confirmado por fuzzing: el original responde 401 E001 ante token malo/ausente.
         status, resp_headers, resp_body = (
-            401, [(b"content-type", b"application/json")], b'{"error":"no autorizado"}')
+            401, [(b"content-type", b"application/json")],
+            '{"error":"E001","mensaje":"no autorizado"}'.encode("utf-8"))
 
     elif method == "POST" and path == "/__reset":
         STATE = initial_state()

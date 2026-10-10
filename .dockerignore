@@ -1,0 +1,23 @@
+# Mantener el build context chico y fuera material que no va en la imagen.
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.DS_Store
+
+# tooling forense y pruebas (no se sirven)
+harness.py
+differential.py
+replay_examples.py
+test_smoke.py
+requirements-dev.txt
+
+# datos / entregables / material
+pruebas/
+experimentos.jsonl
+captures.jsonl
+*.pdf
+*.png
+*.md
+.env
+.venv/

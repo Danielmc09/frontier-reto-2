@@ -1,0 +1,4 @@
+# Dependencias de DESARROLLO/forense (no van en la imagen).
+# harness.py, differential.py y test_smoke.py usan httpx.
+-r requirements.txt
+httpx==0.27.2

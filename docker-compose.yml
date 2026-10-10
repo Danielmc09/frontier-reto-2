@@ -1,0 +1,12 @@
+# Conveniencia para correr local. Lo ejecutas tu:  docker compose up --build
+services:
+  caja-negra:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - RESET_TOKEN=testreset
+    # una sola instancia (no escalar: el estado es por proceso)
+    deploy:
+      replicas: 1

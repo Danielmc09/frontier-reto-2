@@ -3,10 +3,10 @@ regresion.py - Detector rapido del cambio de las 15:30 (~26 requests).
 Corre un battery fijo contra el ORIGINAL y lo compara con el baseline conocido.
 Reusa fuzz.py y loguea en regresion.jsonl (experimentos.jsonl ya se entrego).
 
-  TOKEN=<tu token> python regresion.py
+  TOKEN=<tu token> python -m forense.regresion
   # o Docker:
   # docker run --rm -v "$PWD":/app -w /app -e TOKEN="$TOKEN" python:3.12-slim \
-  #   sh -c "pip install -q httpx && python regresion.py"
+  #   sh -c "pip install -q httpx && python -m forense.regresion"
 
 Antes de las 15:30 debe decir SIN CAMBIOS. Despues, lista EXACTAMENTE que cambio
 (comando, error, checksum, auth o ruta) para parchear model.py y redeployar.
@@ -15,10 +15,10 @@ import json
 import os
 
 # experimentos.jsonl ya se entrego: la regresion loguea aparte (fuzz.py lee LOG_PATH al importarse)
-os.environ.setdefault("LOG_PATH", "regresion.jsonl")
-from fuzz import reset, send, _client  # noqa: E402
+os.environ.setdefault("LOG_PATH", "datos/regresion.jsonl")
+from forense.fuzz import reset, send, _client  # noqa: E402
 from compare import bodies_equal
-from tabla import encabezado, fila, regla, resumen
+from forense.tabla import encabezado, fila, regla, resumen
 
 EX = os.environ.get("EX", "pruebas/ejemplos_v2.jsonl")
 

@@ -8,21 +8,21 @@ Por cada paso compara:
             Si el baseline no existe, esta corrida lo crea. Despues del deploy de la
             v2, cada CAMBIO es candidato a uno de los 3 cambios del ticket.
 
-  TOKEN=<token> python bordes.py
+  TOKEN=<token> python -m forense.bordes
   # o Docker:
   # docker run --rm -v "$PWD":/app -w /app -e TOKEN="$TOKEN" python:3.12-slim \
-  #   sh -c "pip install -q httpx && python bordes.py"
+  #   sh -c "pip install -q httpx && python -m forense.bordes"
 """
 import json
 import os
 
-from fuzz import _client, _log, _pace, _safe_json, reset, send
+from forense.fuzz import _client, _log, _pace, _safe_json, reset, send
 import model
 from compare import bodies_equal
-from tabla import encabezado, fila, regla, resumen
+from forense.tabla import encabezado, fila, regla, resumen
 
 # capturado a las 15:58, ya con la v2 desplegada (FR-0153): es la foto de la v2
-BASELINE = os.environ.get("BASELINE", "bordes_v2.jsonl")
+BASELINE = os.environ.get("BASELINE", "datos/bordes_v2.jsonl")
 COLS = (("CASO", 14), ("MENSAJE", 32), ("RESPUESTA DEL ORIGINAL", 48), ("MODELO", 9), ("V1", 8))
 
 

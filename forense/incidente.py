@@ -13,21 +13,21 @@ Todo se loguea en experimentos.jsonl con su hipotesis.
   5) supuestos: lo que model.py hace sin evidencia (E304 vs otros errores, monto "05",
               control 99/"00", "PING;"), comparado contra el modelo en el momento.
 
-  python incidente.py [umbral|replay|anula|meta|supuestos|afinar|anula-limite|titular|variantes|entrada|http]   # sin argumento corre las tres
+  python -m forense.incidente [umbral|replay|anula|meta|supuestos|afinar|anula-limite|titular|variantes|entrada|http]   # sin argumento corre las tres
 
-  TOKEN=<token> python incidente.py
+  TOKEN=<token> python -m forense.incidente
   # o Docker:
   # docker run --rm -v "$PWD":/app -w /app -e TOKEN="$TOKEN" python:3.12-slim \
-  #   sh -c "pip install -q httpx && python incidente.py"
+  #   sh -c "pip install -q httpx && python -m forense.incidente"
 """
 import datetime
 import json
 from collections import defaultdict
 
-from fuzz import LOG, _client, _log, _pace, _safe_json, reset, send
+from forense.fuzz import LOG, _client, _log, _pace, _safe_json, reset, send
 from compare import bodies_equal
 from model import _checksum
-from tabla import encabezado, fila, regla, resumen
+from forense.tabla import encabezado, fila, regla, resumen
 
 # la v1 respondia igual que los ejemplos hasta las 15:38 (regresion.jsonl); el log de
 # experimentos de la v1 termina a las 15:30:54

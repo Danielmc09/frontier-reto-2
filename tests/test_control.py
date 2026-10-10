@@ -1,13 +1,13 @@
 """Checksum del control contra la evidencia: controles.jsonl + los 20 ejemplos.
 
-Uso:  python test_control.py
+Uso:  python -m tests.test_control
 """
 import json
 import subprocess
 import sys
 import model
 
-pares = [json.loads(l) for l in open("controles.jsonl", encoding="utf-8") if l.strip()]
+pares = [json.loads(l) for l in open("datos/controles.jsonl", encoding="utf-8") if l.strip()]
 pares += [
     {"payload": "DEPOSITO;AC-0001;250000", "control": 86},
     {"payload": "TRANSFER;AC-0001;AC-0002;40000", "control": 86},
@@ -38,6 +38,6 @@ assert error("CONSULTA;AC-0001;99") == "E202"
 assert error("CONSULTA;AC-0001;014") == "E201"
 assert error("CONSULTA;AC-0001;-14") == "E201"
 
-out = subprocess.run([sys.executable, "replay_examples.py"], capture_output=True, text=True).stdout
+out = subprocess.run([sys.executable, "-m", "forense.replay_examples"], capture_output=True, text=True).stdout
 assert out.rstrip().endswith("20/20 ejemplos reproducidos"), out
 print(f"ok: {len(pares)} pares + 20/20 ejemplos")

@@ -11,8 +11,8 @@ servicio: se marcan y NO se modelan.
 
 Uso:
   pip install -r requirements-dev.txt        # necesita httpx
-  TOKEN=<tu token> python fuzz.py            # corre todo
-  TOKEN=<tu token> python fuzz.py checksum   # una sola fase: meta | ejemplos | checksum
+  TOKEN=<tu token> python -m forense.fuzz            # corre todo
+  TOKEN=<tu token> python -m forense.fuzz checksum   # una sola fase: meta | ejemplos | checksum
 
 Re-correlo despues de las 15:30 y compara experimentos.jsonl: el diff te dice
 exactamente que cambio en el servicio.
@@ -27,12 +27,12 @@ import httpx
 BASE_URL = os.environ.get("BASE_URL", "https://caja-negra-production-c64f.up.railway.app").rstrip("/")
 TOKEN = os.environ.get("TOKEN", "")
 RPS = float(os.environ.get("RPS", "8"))
-LOG = os.environ.get("LOG_PATH", "experimentos.jsonl")
-CTRL = os.environ.get("CTRL_PATH", "controles.jsonl")
+LOG = os.environ.get("LOG_PATH", "datos/experimentos.jsonl")
+CTRL = os.environ.get("CTRL_PATH", "datos/controles.jsonl")
 EX = os.environ.get("EX", "pruebas/ejemplos.jsonl")
 
 if not TOKEN:
-    print("Falta TOKEN en el entorno:  TOKEN=<tu token> python fuzz.py", file=sys.stderr)
+    print("Falta TOKEN en el entorno:  TOKEN=<tu token> python -m forense.fuzz", file=sys.stderr)
     sys.exit(1)
 
 _gap = 1.0 / RPS if RPS > 0 else 0.0

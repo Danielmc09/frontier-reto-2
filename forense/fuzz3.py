@@ -1,10 +1,10 @@
 """
 fuzz3.py - Tanda FINAL para cerrar el checksum. Reusa fuzz.py.
 
-  TOKEN=<tu token de la caja negra> python fuzz3.py
+  TOKEN=<tu token de la caja negra> python -m forense.fuzz3
   # o Docker:
   # docker run --rm -v "$PWD":/app -w /app -e TOKEN="$TOKEN" python:3.12-slim \
-  #   sh -c "pip install -q httpx && python fuzz3.py"
+  #   sh -c "pip install -q httpx && python -m forense.fuzz3"
 
 Pincha lo unico que falta:
   - valor de CADA letra (A-Z, y una muestra de minusculas) en la ultima posicion,
@@ -13,7 +13,7 @@ Pincha lo unico que falta:
 Pegame la TABLA final.
 """
 import string
-from fuzz import control_valido, reset
+from forense.fuzz import control_valido, reset
 
 if __name__ == "__main__":
     reset()

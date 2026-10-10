@@ -2,10 +2,10 @@
 fuzz2.py - Segunda tanda quirurgica para crackear el checksum del `control`.
 Reusa la infra de fuzz.py (pacer, log a experimentos.jsonl).
 
-  TOKEN=<tu token de la caja negra> python fuzz2.py
+  TOKEN=<tu token de la caja negra> python -m forense.fuzz2
   # o en Docker:
   # docker run --rm -v "$PWD":/app -w /app -e TOKEN="$TOKEN" python:3.12-slim \
-  #   sh -c "pip install -q httpx && python fuzz2.py"
+  #   sh -c "pip install -q httpx && python -m forense.fuzz2"
 
 Diseño (experimentos controlados, cada grupo aisla una variable):
   - baseline_len : args todo-cero de distinta longitud -> efecto de la longitud / base.
@@ -16,7 +16,7 @@ Diseño (experimentos controlados, cada grupo aisla una variable):
 
 Pegame la TABLA final a Claude.
 """
-from fuzz import control_valido, reset   # usa el cliente/pacer/log de fuzz.py
+from forense.fuzz import control_valido, reset   # usa el cliente/pacer/log de fuzz.py
 
 GRUPOS = {
     "baseline_len": [

@@ -6,7 +6,7 @@ regla del evaluador. Cada secuencia arranca con /__reset en ambos.
 Es el banco de pruebas REAL: hay que llegar a divergencia ~0 en local ANTES de
 gastar una validacion del set. Headers NO se comparan.
 
-Uso:  TOKEN=<token> RESET_TOKEN=<reset> python differential.py
+Uso:  TOKEN=<token> RESET_TOKEN=<reset> python -m forense.differential
 """
 import os
 import asyncio
@@ -16,7 +16,7 @@ import httpx
 from compare import resp_equal
 from app import app  # replica in-process
 from model import _checksum
-from tabla import encabezado, fila, regla, resumen
+from forense.tabla import encabezado, fila, regla, resumen
 
 ORIG = os.environ.get("ORIG_URL", "https://caja-negra-production-c64f.up.railway.app").rstrip("/")
 TOKEN = os.environ.get("TOKEN", "")

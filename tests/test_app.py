@@ -1,4 +1,4 @@
-"""app.py: orden ruta / auth (incidente.py entrada). Uso: TEAM_TOKEN=t python test_app.py"""
+"""app.py: orden ruta / auth (incidente.py entrada). Uso: python -m tests.test_app"""
 import asyncio
 import os
 

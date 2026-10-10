@@ -6,17 +6,17 @@ y la compara contra model.py, que hoy reproduce la v2. Lo que la v1 responde dis
 descontando los cambios 1 (formato del saldo) y 2 (limite 100000 -> 50000), es el cambio 3.
 Todo se loguea en experimentos.jsonl.
 
-  BASE_URL=<url de la v1> TOKEN=<token> python cambio3.py
+  BASE_URL=<url de la v1> TOKEN=<token> python -m forense.cambio3
   # o Docker:
   # docker run --rm -v "$PWD":/app -w /app -e BASE_URL="<url v1>" -e TOKEN="$TOKEN" \
-  #   python:3.12-slim sh -c "pip install -q httpx && python cambio3.py"
+  #   python:3.12-slim sh -c "pip install -q httpx && python -m forense.cambio3"
 """
 import json
 
-from fuzz import _client, reset
-from bordes import _igual, _modelo, _original, raw
+from forense.fuzz import _client, reset
+from forense.bordes import _igual, _modelo, _original, raw
 import model
-from tabla import encabezado, fila, regla, resumen
+from forense.tabla import encabezado, fila, regla, resumen
 
 
 def c(payload):

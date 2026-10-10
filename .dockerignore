@@ -5,18 +5,15 @@ __pycache__/
 .gitignore
 .DS_Store
 
-# tooling forense y pruebas (no se sirven)
-harness.py
-differential.py
-replay_examples.py
-fuzz.py
-test_smoke.py
-requirements-dev.txt
-
-# datos / entregables / material
+# tooling forense, pruebas, datos y documentos (no se sirven: la imagen solo copia
+# model.py, app.py y compare.py)
+forense/
+tests/
+datos/
+docs/
+documentos/
 pruebas/
-experimentos.jsonl
-controles.jsonl
+requirements-dev.txt
 captures.jsonl
 *.pdf
 *.png

@@ -6,20 +6,20 @@ paralelo y con el mismo estado, asi cada request prueba algo y las secuencias la
 quedan cubiertas. Ante una diferencia la anota, resetea los dos lados y sigue.
 Se corta solo ante el rate-limit de infra. Todo se loguea en experimentos.jsonl.
 
-  N=300 SEED=1 TOKEN=<token> python aleatorio.py
+  N=300 SEED=1 TOKEN=<token> python -m forense.aleatorio
   # o Docker:
   # docker run --rm -v "$PWD":/app -w /app -e TOKEN="$TOKEN" python:3.12-slim \
-  #   sh -c "pip install -q httpx && python aleatorio.py"
+  #   sh -c "pip install -q httpx && python -m forense.aleatorio"
 """
 import json
 import os
 import random
 from collections import Counter
 
-from fuzz import reset, send
+from forense.fuzz import reset, send
 import model
 from compare import bodies_equal
-from tabla import encabezado, fila, regla, resumen
+from forense.tabla import encabezado, fila, regla, resumen
 
 N = int(os.environ.get("N", "300"))
 SEED = int(os.environ.get("SEED", "1"))

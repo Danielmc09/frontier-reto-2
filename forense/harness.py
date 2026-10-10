@@ -6,7 +6,7 @@ Log en el formato experimentos.jsonl: id, seq, x_req, hipotesis, request, status
 response, conclusion. Las respuestas con header `X-Frontier-Infra: rate-limit` son
 de INFRAESTRUCTURA, no del servicio: se marcan y NO se modelan.
 
-Uso:  TOKEN=<tu token> python harness.py
+Uso:  TOKEN=<tu token> python -m forense.harness
 """
 import os
 import sys
@@ -18,7 +18,7 @@ import httpx
 BASE_URL = os.environ.get("BASE_URL", "https://caja-negra-production-c64f.up.railway.app").rstrip("/")
 TOKEN = os.environ.get("TOKEN", "")
 RPS = float(os.environ.get("RPS", "8"))           # < 10/s
-LOG_PATH = os.environ.get("LOG_PATH", "experimentos.jsonl")
+LOG_PATH = os.environ.get("LOG_PATH", "datos/experimentos.jsonl")
 
 
 class Pacer:

@@ -1,10 +1,10 @@
 """El modelo contra respuestas grabadas de la v2 (incidente FR-0153).
 
   - pruebas/ejemplos_v2.jsonl: los 20 ejemplos contra la v2 (regresion de las 16:01).
-  - bordes_v2.jsonl: 110 pasos de casos borde contra la v2 (bordes.py de las 15:58).
+  - datos/bordes_v2.jsonl: 110 pasos de casos borde contra la v2 (bordes.py de las 15:58).
   - limite de TRANSFER: 50000 pasa, 50001 da E506 (incidente.py, umbral).
 
-Uso:  python test_v2.py
+Uso:  python -m tests.test_v2
 """
 import json
 from collections import defaultdict
@@ -36,7 +36,7 @@ ej = [json.loads(l) for l in open("pruebas/ejemplos_v2.jsonl", encoding="utf-8")
 fallos += correr([(m(r["request"]["m"]), r["status"], r["response"]) for r in ej])
 
 casos = defaultdict(list)
-for l in open("bordes_v2.jsonl", encoding="utf-8"):
+for l in open("datos/bordes_v2.jsonl", encoding="utf-8"):
     r = json.loads(l)
     # los casos body-* mandaron el cuerpo crudo, el resto {"m": request}
     body = r["request"].encode() if r["caso"].startswith("body-") else m(r["request"])

@@ -2,8 +2,8 @@
 
 Multistage: una etapa compila dependencias en un venv, la otra es una imagen
 `python:3.12-slim` no-root con **solo** `model.py`, `app.py`, `compare.py` y el venv.
-El tooling forense (`harness.py`, `differential.py`, `replay_examples.py`) **no**
-entra en la imagen.
+Las herramientas forenses (`forense/`), los tests (`tests/`), los datos (`datos/`) y la
+documentación **no** entran en la imagen.
 
 ## Comandos (los corres tú)
 

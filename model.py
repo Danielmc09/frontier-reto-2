@@ -13,6 +13,7 @@ de control provisional). Lo PENDIENTE y marcado TODO(forense):
     ANULA sobre op inexistente, umbral exacto de TRANSFER.
 """
 import json
+import re
 
 _H = [(b"content-type", b"application/json; charset=utf-8")]
 
@@ -21,10 +22,29 @@ ARITY = {"PING": 1, "ALTA": 2, "CONSULTA": 2, "DEPOSITO": 3, "TRANSFER": 4, "ANU
 PING_VALIDA_CONTROL = False  # "responde pong aunque el ultimo campo no sea numero"
 LIMITE_TRANSFER = 100000     # probable: 100000 ok, 120000 E506. Acotar por fuzzing.
 
-# Oraculo de control PROVISIONAL (payload -> control valido). Memoriza: solo
-# sirve para verificar el interprete contra los ejemplos. Se REEMPLAZA por el
-# checksum reversado (control_valido real) antes de servir al set oculto.
-CONTROL_ORACLE = {}
+# --- Checksum del control (reversado por fuzzing; ver spec / experimentos.jsonl) ---
+# Horner sobre el argumento: r = (10*r - 3*v(ch)) % 97, con base por comando,
+# llevado al rango [2,98] (bug de modulo incompleto que explica el 98).
+# Confianza: CONFIRMADO para digitos, letras A-I y cuentas AC-####. Para el resto
+# (nombres en minuscula, OP-, letras repetidas) la validacion es incierta, asi que
+# se ACEPTA: no arriesgamos un E202 falso que haria fallar un control valido.
+_CTRL_INIT = {"CONSULTA": 11, "ALTA": 85, "ANULA": 45, "DEPOSITO": 29, "TRANSFER": 58}
+_CTRL_SEGURO = re.compile(r"^[0-9A-I;-]*$")
+
+
+def _cval(ch: str) -> int:
+    o = ord(ch.upper())
+    if ch.isdigit():
+        return int(ch) + 3
+    if 65 <= o <= 73:        # A-I -> 4..12
+        return o - 61
+    if 74 <= o <= 90:        # J-Z -> 34..50
+        return o - 40
+    if ch == ";":
+        return 48
+    if ch == "-":
+        return 73
+    return 0
 
 
 def initial_state() -> dict:
@@ -52,12 +72,16 @@ def _es_entero(s: str) -> bool:
 
 def control_valido(payload: str, control_int: int) -> bool:
     """payload = 'CMD;arg1;...' (sin el control), CMD en mayusculas.
-    TODO(forense): CRACKEAR el checksum. Plan: barrer control 0..99 por mensaje
-    para hallar el valido, juntar pares (payload -> control) y reversar la formula.
-    Provisional: oraculo si lo conocemos; si no, aceptar."""
-    if payload in CONTROL_ORACLE:
-        return CONTROL_ORACLE[payload] == control_int
-    return True
+    Valida el checksum SOLO en la zona confirmada; fuera de ella acepta."""
+    cmd, _, arg = payload.partition(";")
+    init = _CTRL_INIT.get(cmd)
+    if init is None or not _CTRL_SEGURO.match(arg):
+        return True
+    r = init
+    for ch in arg:
+        r = (10 * r - 3 * _cval(ch)) % 97
+    checksum = r if r >= 2 else r + 97
+    return control_int == checksum
 
 
 def respond(method, path, query, headers, body, state):
